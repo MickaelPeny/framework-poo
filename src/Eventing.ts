@@ -1,6 +1,8 @@
-import { User } from "./User";
 type Callback = () => void;
-export class Eventings extends User {
+
+export class Eventings {
+  events: { [key: string]: Callback[] } = {};
+
   on(eventName: string, callback: Callback) {
     const callbacks = this.events[eventName] || [];
     callbacks.push(callback);
@@ -12,5 +14,9 @@ export class Eventings extends User {
     if (!callbacks || !callbacks.length) {
       return;
     }
+
+    callbacks.forEach((callback) => {
+      callback();
+    });
   }
 }

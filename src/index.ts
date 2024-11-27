@@ -1,6 +1,6 @@
-import { User } from "./User";
+import { Attributes } from "./Attributes";
+import { UserProps } from "./User";
 
-const user = new User({ id: "2983" });
+const attrs = new Attributes<UserProps>({ id: "5", name: "john", age: 25 });
 
-const alice = new User({ name: "Alice", age: 32 });
-alice.save();
+const id = attrs.get("id");
