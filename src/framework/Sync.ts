@@ -1,8 +1,6 @@
 import axios from "axios";
+import { HasId } from "./interfaces";
 
-export interface HasId {
-  id?: string;
-}
 export class Sync<P extends HasId> {
   constructor(public rootUrl: string) {}
 

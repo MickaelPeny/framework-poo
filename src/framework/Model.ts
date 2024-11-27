@@ -1,20 +1,11 @@
-import { Attributes } from "./Attributes";
-import { Eventings } from "./Eventing";
-import { Sync } from "./Sync";
-export interface UserProps {
-  id?: string;
-  name?: string;
-  age?: number;
-}
+import { HasId, IAttributes, IEventing, ISync } from "./interfaces";
 
-export class User {
-  eventing: Eventings = new Eventings();
-  sync: Sync<UserProps> = new Sync<UserProps>("http://localhost:3001/users");
-  attributes: Attributes<UserProps>;
-
-  constructor(attrs: UserProps) {
-    this.attributes = new Attributes<UserProps>(attrs);
-  }
+export class Model<P extends HasId> {
+  constructor(
+    private attributes: IAttributes<P>,
+    private eventing: IEventing,
+    private sync: ISync<P>
+  ) {}
 
   get on() {
     return this.eventing.on;
@@ -28,7 +19,7 @@ export class User {
     return this.attributes.get;
   }
 
-  set(updatedData: UserProps): void {
+  set(updatedData: P): void {
     this.attributes.set(updatedData);
     this.eventing.trigger("change");
   }

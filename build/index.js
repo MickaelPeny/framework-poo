@@ -5,7 +5,7 @@
       __defProp(target, name, { get: all3[name], enumerable: true });
   };
 
-  // src/Attributes.ts
+  // src/framework/Attributes.ts
   var Attributes = class {
     constructor(data) {
       this.data = data;
@@ -21,7 +21,7 @@
     }
   };
 
-  // src/Eventing.ts
+  // src/framework/Eventing.ts
   var Eventings = class {
     events = {};
     on = (eventName, callback) => {
@@ -38,6 +38,40 @@
         callback();
       });
     };
+  };
+
+  // src/framework/Model.ts
+  var Model = class {
+    constructor(attributes, eventing, sync) {
+      this.attributes = attributes;
+      this.eventing = eventing;
+      this.sync = sync;
+    }
+    get on() {
+      return this.eventing.on;
+    }
+    get trigger() {
+      return this.eventing.trigger;
+    }
+    get get() {
+      return this.attributes.get;
+    }
+    set(updatedData) {
+      this.attributes.set(updatedData);
+      this.eventing.trigger("change");
+    }
+    fetch() {
+      const id = this.get("id");
+      if (!id) throw new Error("No ID provided");
+      this.sync.fetch(id).then((response) => {
+        this.set(response.data);
+      });
+    }
+    save() {
+      this.sync.save(this.attributes.getAllProps()).then((response) => {
+        this.trigger("save");
+      });
+    }
   };
 
   // node_modules/axios/lib/helpers/bind.js
@@ -2536,7 +2570,7 @@
     mergeConfig: mergeConfig2
   } = axios_default;
 
-  // src/Sync.ts
+  // src/framework/Sync.ts
   var Sync = class {
     constructor(rootUrl) {
       this.rootUrl = rootUrl;
@@ -2553,44 +2587,17 @@
     }
   };
 
-  // src/User.ts
-  var User = class {
-    eventing = new Eventings();
-    sync = new Sync("http://localhost:3001/users");
-    attributes;
-    constructor(attrs) {
-      this.attributes = new Attributes(attrs);
-    }
-    get on() {
-      return this.eventing.on;
-    }
-    get trigger() {
-      return this.eventing.trigger;
-    }
-    get get() {
-      return this.attributes.get;
-    }
-    set(updatedData) {
-      this.attributes.set(updatedData);
-      this.eventing.trigger("change");
-    }
-    fetch() {
-      const id = this.get("id");
-      if (!id) throw new Error("No ID provided");
-      this.sync.fetch(id).then((response) => {
-        this.set(response.data);
-      });
-    }
-    save() {
-      this.sync.save(this.attributes.getAllProps()).then((response) => {
-        this.trigger("save");
-      });
+  // src/user/User.ts
+  var User = class _User extends Model {
+    static buildUser(attrs) {
+      return new _User(
+        new Attributes(attrs),
+        new Eventings(),
+        new Sync("http://localhost:3001/users")
+      );
     }
   };
 
   // src/index.ts
-  var user = new User({ name: "Leo", age: 99 });
-  console.log(user.get("name"));
-  user.on("change", () => console.log("changement"));
-  user.trigger("change");
+  var john = User.buildUser({ name: "John DOe", age: 25 });
 })();
