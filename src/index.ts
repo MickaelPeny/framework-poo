@@ -1,6 +1,9 @@
-import { Attributes } from "./Attributes";
-import { UserProps } from "./User";
+import { User } from "./User";
 
-const attrs = new Attributes<UserProps>({ id: "5", name: "john", age: 25 });
+const user = new User({ name: "Leo", age: 99 });
 
-const id = attrs.get("id");
+console.log(user.get("name"));
+
+user.on("change", () => console.log("changement"));
+
+user.trigger("change");
