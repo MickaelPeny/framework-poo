@@ -21,59 +21,6 @@
     }
   };
 
-  // src/framework/Eventing.ts
-  var Eventings = class {
-    events = {};
-    on = (eventName, callback) => {
-      const callbacks = this.events[eventName] || [];
-      callbacks.push(callback);
-      this.events[eventName] = callbacks;
-    };
-    trigger = (eventName) => {
-      const callbacks = this.events[eventName];
-      if (!callbacks || !callbacks.length) {
-        return;
-      }
-      callbacks.forEach((callback) => {
-        callback();
-      });
-    };
-  };
-
-  // src/framework/Model.ts
-  var Model = class {
-    constructor(attributes, eventing, sync) {
-      this.attributes = attributes;
-      this.eventing = eventing;
-      this.sync = sync;
-    }
-    get on() {
-      return this.eventing.on;
-    }
-    get trigger() {
-      return this.eventing.trigger;
-    }
-    get get() {
-      return this.attributes.get;
-    }
-    set(updatedData) {
-      this.attributes.set(updatedData);
-      this.eventing.trigger("change");
-    }
-    fetch() {
-      const id = this.get("id");
-      if (!id) throw new Error("No ID provided");
-      this.sync.fetch(id).then((response) => {
-        this.set(response.data);
-      });
-    }
-    save() {
-      this.sync.save(this.attributes.getAllProps()).then((response) => {
-        this.trigger("save");
-      });
-    }
-  };
-
   // node_modules/axios/lib/helpers/bind.js
   function bind(fn, thisArg) {
     return function wrap() {
@@ -2570,6 +2517,84 @@
     mergeConfig: mergeConfig2
   } = axios_default;
 
+  // src/framework/Eventing.ts
+  var Eventings = class {
+    events = {};
+    on = (eventName, callback) => {
+      const callbacks = this.events[eventName] || [];
+      callbacks.push(callback);
+      this.events[eventName] = callbacks;
+    };
+    trigger = (eventName) => {
+      const callbacks = this.events[eventName];
+      if (!callbacks || !callbacks.length) {
+        return;
+      }
+      callbacks.forEach((callback) => {
+        callback();
+      });
+    };
+  };
+
+  // src/framework/Collection.ts
+  var Collection = class {
+    constructor(rootUrl, deserialize) {
+      this.rootUrl = rootUrl;
+      this.deserialize = deserialize;
+    }
+    models = [];
+    eventing = new Eventings();
+    get on() {
+      return this.eventing.on;
+    }
+    get trigger() {
+      return this.eventing.trigger;
+    }
+    fetch() {
+      axios_default.get(this.rootUrl).then((response) => {
+        response.data.forEach((data) => {
+          const model = this.deserialize(data);
+          this.models.push(model);
+        });
+        this.trigger("change");
+      });
+    }
+  };
+
+  // src/framework/Model.ts
+  var Model = class {
+    constructor(attributes, eventing, sync) {
+      this.attributes = attributes;
+      this.eventing = eventing;
+      this.sync = sync;
+    }
+    get on() {
+      return this.eventing.on;
+    }
+    get trigger() {
+      return this.eventing.trigger;
+    }
+    get get() {
+      return this.attributes.get;
+    }
+    set(updatedData) {
+      this.attributes.set(updatedData);
+      this.eventing.trigger("change");
+    }
+    fetch() {
+      const id = this.get("id");
+      if (!id) throw new Error("No ID provided");
+      this.sync.fetch(id).then((response) => {
+        this.set(response.data);
+      });
+    }
+    save() {
+      this.sync.save(this.attributes.getAllProps()).then((response) => {
+        this.trigger("save");
+      });
+    }
+  };
+
   // src/framework/Sync.ts
   var Sync = class {
     constructor(rootUrl) {
@@ -2588,16 +2613,22 @@
   };
 
   // src/user/User.ts
+  var apiUrl = "http://localhost:3001/users";
   var User = class _User extends Model {
     static buildUser(attrs) {
       return new _User(
         new Attributes(attrs),
         new Eventings(),
-        new Sync("http://localhost:3001/users")
+        new Sync(apiUrl)
       );
+    }
+    static buildCollection() {
+      return new Collection(apiUrl, _User.buildUser);
     }
   };
 
   // src/index.ts
-  var john = User.buildUser({ name: "John DOe", age: 25 });
+  var collection = User.buildCollection();
+  collection.fetch();
+  console.log(collection);
 })();
