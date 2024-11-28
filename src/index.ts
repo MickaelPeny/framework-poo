@@ -1,5 +1,8 @@
 import { User } from "./user/User";
-const collection = User.buildCollection();
-collection.fetch();
+import { UserEdit } from "./user/UserEdit";
+const parent = document.getElementById("root");
+const john = User.buildUser({ name: "John Doe", age: 45 });
 
-console.log(collection);
+const userEdit = new UserEdit(parent!, john);
+userEdit.render();
+console.log(userEdit);
