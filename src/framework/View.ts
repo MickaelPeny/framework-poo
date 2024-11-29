@@ -2,14 +2,14 @@ import { HasId } from "./interfaces";
 import { Model } from "./Model";
 
 export abstract class View<T extends Model<P>, P extends HasId> {
-  regions: { [key: string]: Element };
+  regions: { [key: string]: Element } = {};
   constructor(public parent: Element, public model: T) {
     this.bindModel();
   }
 
   abstract template(): string;
 
-  eventsMap(): { [key: string]: () => void } {
+  eventsMap(): { [key: string]: (e: Event) => void } {
     return {};
   }
 
@@ -18,9 +18,11 @@ export abstract class View<T extends Model<P>, P extends HasId> {
   }
 
   bindModel() {
-    this.model.on("change", () => {
-      this.render();
-    });
+    if ("on" in this.model) {
+      this.model.on("change", () => {
+        this.render();
+      });
+    }
   }
 
   bindEvents(fragment: DocumentFragment) {

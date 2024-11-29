@@ -2640,7 +2640,7 @@
       this.model = model;
       this.bindModel();
     }
-    regions;
+    regions = {};
     eventsMap() {
       return {};
     }
@@ -2648,9 +2648,11 @@
       return {};
     }
     bindModel() {
-      this.model.on("change", () => {
-        this.render();
-      });
+      if ("on" in this.model) {
+        this.model.on("change", () => {
+          this.render();
+        });
+      }
     }
     bindEvents(fragment) {
       const eventsMap = this.eventsMap();
@@ -2755,10 +2757,65 @@
     }
   };
 
+  // src/user/UserList.ts
+  var UserList = class extends View {
+    constructor(parent2, collection) {
+      super(parent2, collection);
+      this.parent = parent2;
+      this.collection = collection;
+      this.bindCollection();
+    }
+    bindCollection() {
+      this.collection.on("change", () => {
+        this.render();
+      });
+    }
+    template() {
+      return `
+      <div>
+        <h1>User List</h1>
+        <select class="user-select">
+          <option value="">Selectionne un user...</option>
+          ${this.collection.models.map(
+        (user) => `
+              <option value="${user.get("id")}">${user.get("name") || ""}</option>
+            `
+      ).join("")}
+        </select>
+      </div>
+    `;
+    }
+    eventsMap() {
+      return {
+        "change:.user-select": this.onUserSelect
+      };
+    }
+    onUserSelect = (event) => {
+      const select = event.target;
+      const userId = select.value;
+      if (userId) {
+        const selectedUser = this.collection.models.find(
+          (user) => user.get("id") === userId
+        );
+        if (selectedUser) {
+          const userShow = document.querySelector(".user-show");
+          if (userShow) {
+            new UserShow(userShow, selectedUser).render();
+          }
+        }
+      }
+    };
+  };
+
   // src/index.ts
   var parent = document.getElementById("root");
   var john = User.buildUser({ name: "John Doe", age: 45 });
   var userEdit = new UserEdit(parent, john);
   userEdit.render();
-  console.log(userEdit);
+  var usersParent = document.createElement("div");
+  parent?.appendChild(usersParent);
+  var userCollection = User.buildCollection();
+  var userList = new UserList(usersParent, userCollection);
+  userCollection.fetch();
+  userList.render();
 })();
